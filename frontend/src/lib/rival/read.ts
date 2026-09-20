@@ -1,7 +1,6 @@
 import { createClient } from "genlayer-js";
-import { studioDevnet } from "genlayer-js/chains";
 import { CalldataAddress } from "genlayer-js/types";
-import { RIVAL_ADDRESS, MAX_PAGE_SIZE } from "./config";
+import { RIVAL_ADDRESS, MAX_PAGE_SIZE, STUDIO_NEXT_CHAIN } from "./config";
 import {
   normalizeConfig,
   normalizeEvidence,
@@ -12,7 +11,7 @@ import {
 import { normalizeError, RivalError, logTechnicalError } from "./errors";
 import type { Market, Page, Position, RivalConfig, SourceEvidence, SourceName } from "./types";
 
-const client = createClient({ chain: studioDevnet as never });
+const client = createClient({ chain: STUDIO_NEXT_CHAIN as never });
 const cache = new Map<string, { value: unknown; expires: number }>();
 const inflight = new Map<string, Promise<unknown>>();
 type ViewAccount = { address: `0x${string}`; type: "json-rpc" };

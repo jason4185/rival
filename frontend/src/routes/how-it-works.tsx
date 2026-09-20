@@ -32,7 +32,7 @@ const steps = [
   {
     number: "03",
     icon: CheckCircle2,
-    title: "Binance and Bybit verify the result",
+    title: "Gate and Bitget verify the result",
     body: "Each source independently evaluates both baskets using the exact same one-hour candle. Both must choose the same side for 2/2 consensus.",
   },
   {
@@ -79,7 +79,7 @@ function HowItWorksPage() {
         </div>
         <div className="text-left sm:text-right">
           <div className="label-caps">Settlement rule</div>
-          <div className="num mt-2 text-sm font-semibold text-gold">BINANCE + BYBIT · 2/2</div>
+          <div className="num mt-2 text-sm font-semibold text-gold">GATE + BITGET · 2/2</div>
         </div>
       </Card>
     </Page>

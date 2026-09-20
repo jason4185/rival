@@ -3,9 +3,8 @@ import {
   type Eip1193Provider,
   type TrackedStatus,
 } from "@genlayer/transaction-kit";
-import { studioDevnet } from "genlayer-js/chains";
 import { ExecutionResult } from "genlayer-js/types";
-import { RIVAL_ADDRESS, explorerTransactionUrl } from "./config";
+import { RIVAL_ADDRESS, explorerTransactionUrl, STUDIO_NEXT_CHAIN } from "./config";
 import { normalizeError, RivalError, logTechnicalError } from "./errors";
 import { invalidateAfterRivalWrite } from "./read";
 
@@ -87,7 +86,7 @@ export async function submitRivalWrite({
 }): Promise<RivalWriteResult> {
   const tx = { kind: "write" as const, address: RIVAL_ADDRESS, method, args };
   try {
-    const kit = createTransactionKit({ chain: studioDevnet, provider, account });
+    const kit = createTransactionKit({ chain: STUDIO_NEXT_CHAIN, provider, account });
     const quote = await kit.estimate(
       { preset: "standard", ...(userValue === undefined ? {} : { userValue }) },
       tx,

@@ -125,7 +125,7 @@ function MarketContent({
   const [actionError, setActionError] = useState<string>();
   const [refreshError, setRefreshError] = useState<string>();
   const [settlementFeedback, setSettlementFeedback] = useState<string>();
-  const [evidenceSource, setEvidenceSource] = useState<SourceName>("BINANCE");
+  const [evidenceSource, setEvidenceSource] = useState<SourceName>("GATE");
   const evidence = useSourceEvidence(
     m.market_id,
     evidenceSource,
@@ -398,7 +398,7 @@ function MarketContent({
             <ul className="mt-2 list-disc space-y-1 pl-4">
               <li>Both baskets use the exact same 1H UTC candle.</li>
               <li>Each source calculates both equal-average basket returns.</li>
-              <li>Binance and Bybit must agree 2/2.</li>
+              <li>Gate and Bitget must agree 2/2.</li>
               <li>Winners share the full pool pro-rata to stake.</li>
             </ul>
           </Card>
@@ -552,7 +552,7 @@ function EvidenceSection({
       {show && (
         <>
           <div className="mt-4 flex gap-2">
-            {(["BINANCE", "BYBIT"] as SourceName[]).map((item) => (
+            {(["GATE", "BITGET"] as SourceName[]).map((item) => (
               <button
                 key={item}
                 onClick={() => setSource(item)}

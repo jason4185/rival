@@ -154,7 +154,7 @@ function CreatePage() {
               </div>
             </div>
             <div className="mt-4 space-y-1.5 border-t border-border pt-3 text-xs">
-              <Row k="Oracles" v={config.data ? "Binance + Bybit (2/2)" : "—"} />
+              <Row k="Oracles" v={config.data ? "Gate + Bitget (2/2)" : "—"} />
               <Row k="Bets close" v={config.data ? formatUtc(start) : "—"} />
               <Row
                 k="Finality grace"

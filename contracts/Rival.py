@@ -2,7 +2,7 @@
 # { "Depends": "py-genlayer:5jycge4q8k23462jtb0b9fyey1s9qz928sz2nbrd9mg4sxqg2qng" }
 
 import json
-import time
+from datetime import datetime, timezone
 
 import genlayer as gl
 from genlayer import Address, u256
@@ -18,13 +18,13 @@ ASSET_NAMES = ("BTC", "ETH", "SOL", "GOLD", "SILVER", "WTI_CRUDE")
 CRYPTO_ASSETS = (0, 1, 2)
 COMMODITY_ASSETS = (3, 4, 5)
 
-SOURCE_BINANCE = "BINANCE"
-SOURCE_BYBIT = "BYBIT"
-SOURCES = (SOURCE_BINANCE, SOURCE_BYBIT)
+SOURCE_GATE = "GATE"
+SOURCE_BITGET = "BITGET"
+SOURCES = (SOURCE_GATE, SOURCE_BITGET)
 
-# Binance USDⓈ-M and Bybit linear symbols are intentionally immutable.
-BINANCE_SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "XAUUSDT", "XAGUSDT", "CLUSDT")
-BYBIT_SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "XAUUSDT", "XAGUSDT", "XTIUSDT")
+# Gate futures and Bitget USDT-futures symbols are intentionally immutable.
+GATE_SYMBOLS = ("BTC_USDT", "ETH_USDT", "SOL_USDT", "XAU_USDT", "XAG_USDT", "CL_USDT")
+BITGET_SYMBOLS = ("BTCUSDT", "ETHUSDT", "SOLUSDT", "XAUUSDT", "XAGUSDT", "CLUSDT")
 
 STATE_OPEN = "OPEN"
 STATE_PENDING = "SETTLEMENT_PENDING"
@@ -88,15 +88,15 @@ def _outcome_name(outcome) -> str:
 def _asset_symbol(source: str, asset: u256) -> str:
     if not isinstance(asset, int) or isinstance(asset, bool) or asset < 0 or asset >= len(ASSET_NAMES):
         raise gl.vm.UserError("invalid asset")
-    if source == SOURCE_BINANCE:
-        return BINANCE_SYMBOLS[asset]
-    if source == SOURCE_BYBIT:
-        return BYBIT_SYMBOLS[asset]
+    if source == SOURCE_GATE:
+        return GATE_SYMBOLS[asset]
+    if source == SOURCE_BITGET:
+        return BITGET_SYMBOLS[asset]
     raise gl.vm.UserError("invalid source")
 
 
 def _now() -> int:
-    return int(time.time())
+    return int(datetime.now(timezone.utc).timestamp())
 
 
 def _is_digits(value: str) -> bool:
@@ -198,34 +198,55 @@ def _request_json(url: str):
     return _response_json(response)
 
 
-def _binance_candle(payload, start_ms: int, end_ms: int, symbol: str):
-    if not isinstance(payload, list) or len(payload) != 1 or not isinstance(payload[0], list):
+def _gate_candle(payload, timestamp: int, symbol: str):
+    if not isinstance(payload, list) or len(payload) != 1:
         return None
     row = payload[0]
-    if len(row) != 12 or _parse_integer(row[0]) != start_ms or _parse_integer(row[6]) != end_ms - 1:
+    if isinstance(row, list):
+        if len(row) != 7 or _parse_integer(row[0]) != timestamp:
+            return None
+        opening = _parse_price(row[5])
+        high = _parse_price(row[3])
+        low = _parse_price(row[4])
+        closing = _parse_price(row[2])
+    elif isinstance(row, dict):
+        if len(row) > 10 or "t" not in row or "o" not in row or "h" not in row or "l" not in row or "c" not in row:
+            return None
+        if row.get("source", SOURCE_GATE) != SOURCE_GATE or row.get("symbol", symbol) != symbol:
+            return None
+        if row.get("contract", symbol) != symbol or row.get("interval", "1h") != "1h":
+            return None
+        if _parse_integer(row["t"]) != timestamp:
+            return None
+        opening = _parse_price(row["o"])
+        high = _parse_price(row["h"])
+        low = _parse_price(row["l"])
+        closing = _parse_price(row["c"])
+    else:
         return None
-    opening = _parse_price(row[1])
-    closing = _parse_price(row[4])
-    if opening is None or closing is None:
+    if opening is None or high is None or low is None or closing is None:
         return None
-    return start_ms, opening, closing, symbol
+    return timestamp, opening, closing, symbol
 
 
-def _bybit_candle(payload, start_ms: int, symbol: str):
-    if not isinstance(payload, dict) or payload.get("retCode") != 0:
+def _bitget_candle(payload, start_ms: int, end_ms: int, symbol: str):
+    if not isinstance(payload, dict) or payload.get("code") != "00000" or "data" not in payload:
         return None
-    result = payload.get("result")
-    if not isinstance(result, dict) or result.get("category") != "linear" or result.get("symbol") != symbol:
+    if payload.get("source", SOURCE_BITGET) != SOURCE_BITGET or payload.get("category", "USDT-FUTURES") != "USDT-FUTURES" or payload.get("symbol", symbol) != symbol:
         return None
-    rows = result.get("list")
-    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], list) or len(rows[0]) != 7:
+    if payload.get("interval", "1H") != "1H" or payload.get("type", "market") not in ("market", ""):
+        return None
+    rows = payload["data"]
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], list):
         return None
     row = rows[0]
-    if _parse_integer(row[0]) != start_ms:
+    if len(row) != 7 or _parse_integer(row[0]) != start_ms:
         return None
     opening = _parse_price(row[1])
+    high = _parse_price(row[2])
+    low = _parse_price(row[3])
     closing = _parse_price(row[4])
-    if opening is None or closing is None:
+    if opening is None or high is None or low is None or closing is None:
         return None
     return start_ms, opening, closing, symbol
 
@@ -234,26 +255,26 @@ def _fetch_candle(source: str, asset: u256, start_seconds: u256, end_seconds: u2
     symbol = _asset_symbol(source, asset)
     start_ms = _mul_u256(start_seconds, 1000)
     end_ms = _mul_u256(end_seconds, 1000)
-    if source == SOURCE_BINANCE:
+    if source == SOURCE_GATE:
         url = (
-            "https://fapi.binance.com/fapi/v1/klines?symbol=" + symbol
-            + "&interval=1h&startTime=" + str(start_ms)
+            "https://api.gateio.ws/api/v4/futures/usdt/candlesticks?contract=" + symbol
+            + "&interval=1h&from=" + str(start_seconds)
+            + "&to=" + str(end_seconds - 1)
+        )
+        status, payload = _request_json(url)
+        if status != "OK":
+            return status, None
+        row = _gate_candle(payload, start_seconds, symbol)
+    elif source == SOURCE_BITGET:
+        url = (
+            "https://api.bitget.com/api/v3/market/candles?category=USDT-FUTURES&symbol=" + symbol
+            + "&interval=1H&startTime=" + str(start_ms)
             + "&endTime=" + str(end_ms - 1) + "&limit=1"
         )
         status, payload = _request_json(url)
         if status != "OK":
             return status, None
-        row = _binance_candle(payload, start_ms, end_ms, symbol)
-    elif source == SOURCE_BYBIT:
-        url = (
-            "https://api.bybit.com/v5/market/kline?category=linear&symbol=" + symbol
-            + "&interval=60&start=" + str(start_ms)
-            + "&end=" + str(end_ms - 1) + "&limit=1"
-        )
-        status, payload = _request_json(url)
-        if status != "OK":
-            return status, None
-        row = _bybit_candle(payload, start_ms, symbol)
+        row = _bitget_candle(payload, start_ms, end_ms, symbol)
     else:
         return SOURCE_INVALID, None
     return ("OK", row) if row is not None else (SOURCE_INVALID, None)
@@ -335,7 +356,7 @@ def _source_once(source: str, start: u256, end: u256) -> dict:
             "market_start": start,
             "market_end": end,
             "candle_timestamp": str(timestamp),
-            "timestamp_unit": "ms",
+            "timestamp_unit": "s" if source == SOURCE_GATE else "ms",
             "interval": "1h",
             "open": opening_text,
             "close": closing_text,
@@ -446,7 +467,9 @@ def _evidence_key(evidence: dict, source: str, start: u256, end: u256):
         if row["valid"] != valid:
             return None
         if valid:
-            if row["candle_timestamp"] != str(_mul_u256(start, 1000)) or row["timestamp_unit"] != "ms":
+            expected_timestamp = str(start if source == SOURCE_GATE else _mul_u256(start, 1000))
+            expected_timestamp_unit = "s" if source == SOURCE_GATE else "ms"
+            if row["candle_timestamp"] != expected_timestamp or row["timestamp_unit"] != expected_timestamp_unit:
                 return None
             opening = _parse_price(row["open"])
             closing = _parse_price(row["close"])
@@ -750,7 +773,7 @@ class Rival(gl.contract.Contract):
             "crypto_basket": list(ASSET_NAMES[:3]),
             "commodities_basket": list(ASSET_NAMES[3:]),
             "sources": list(SOURCES),
-            "symbols_by_source": {SOURCE_BINANCE: list(BINANCE_SYMBOLS), SOURCE_BYBIT: list(BYBIT_SYMBOLS)},
+            "symbols_by_source": {SOURCE_GATE: list(GATE_SYMBOLS), SOURCE_BITGET: list(BITGET_SYMBOLS)},
             "duration_seconds": DURATION_SECONDS,
             "minimum_bet": MIN_BET,
             "maximum_bet_per_wallet_per_market": MAX_BET_PER_MARKET,
@@ -765,7 +788,7 @@ class Rival(gl.contract.Contract):
             "settlement_deadline_anchor": "market_end",
             "payout_rounding": "floor; final winning claimant receives remaining pool",
             "zero_backed_winner_behavior": "inconclusive with original-stake refunds",
-            "source_evidence_semantics": "each source candle is independently re-fetched and exactly matched by validators; Binance and Bybit prices are never cross-compared",
+            "source_evidence_semantics": "each source candle is independently re-fetched and exactly matched by validators; Gate and Bitget prices are never cross-compared",
             "max_page_size": MAX_PAGE_SIZE,
             "max_markets": MAX_MARKETS,
             "max_positions": MAX_POSITIONS,

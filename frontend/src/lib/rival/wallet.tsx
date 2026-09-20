@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Eip1193Provider } from "@genlayer/transaction-kit";
-import { STUDIO_DEV_CHAIN_ID, STUDIO_DEV_RPC_URL, clearRivalReadCache } from "./walletSupport";
+import { STUDIO_NEXT_CHAIN_ID, STUDIO_NEXT_RPC_URL, clearRivalReadCache } from "./walletSupport";
 
 type WalletContextValue = {
   provider: Eip1193Provider | undefined;
@@ -93,7 +93,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const switchNetwork = useCallback(async () => {
     const source = provider ?? getProvider();
     if (!source) throw new Error("Connect a compatible wallet to continue.");
-    const chainIdHex = `0x${STUDIO_DEV_CHAIN_ID.toString(16)}`;
+    const chainIdHex = `0x${STUDIO_NEXT_CHAIN_ID.toString(16)}`;
     try {
       await source.request({
         method: "wallet_switchEthereumChain",
@@ -112,7 +112,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             chainId: chainIdHex,
             chainName: "GenLayer Studio Next",
             nativeCurrency: { name: "GEN", symbol: "GEN", decimals: 18 },
-            rpcUrls: [STUDIO_DEV_RPC_URL],
+            rpcUrls: [STUDIO_NEXT_RPC_URL],
             blockExplorerUrls: ["https://explorer-studio-dev.genlayer.com"],
           },
         ],
@@ -132,7 +132,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       chainId,
       connected: Boolean(address),
       available: Boolean(provider),
-      wrongNetwork: Boolean(address && chainId !== STUDIO_DEV_CHAIN_ID),
+      wrongNetwork: Boolean(address && chainId !== STUDIO_NEXT_CHAIN_ID),
       connect,
       disconnect,
       switchNetwork,

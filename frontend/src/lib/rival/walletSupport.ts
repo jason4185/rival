@@ -1,2 +1,2 @@
-export { STUDIO_DEV_CHAIN_ID, STUDIO_DEV_RPC_URL } from "./config";
+export { STUDIO_NEXT_CHAIN_ID, STUDIO_NEXT_RPC_URL } from "./config";
 export { clearRivalReadCache } from "./read";

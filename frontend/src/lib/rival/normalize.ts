@@ -141,10 +141,8 @@ export function normalizeConfig(raw: unknown): RivalConfig {
     crypto_basket: asStringArray(value.crypto_basket),
     commodities_basket: asStringArray(value.commodities_basket),
     sources: Array.isArray(value.sources)
-      ? value.sources.filter(
-          (x: unknown): x is "BINANCE" | "BYBIT" => x === "BINANCE" || x === "BYBIT",
-        )
-      : ["BINANCE", "BYBIT"],
+      ? value.sources.filter((x: unknown): x is "GATE" | "BITGET" => x === "GATE" || x === "BITGET")
+      : ["GATE", "BITGET"],
     duration_seconds: asBigInt(value.duration_seconds),
     minimum_bet: asBigInt(value.minimum_bet),
     maximum_bet_per_wallet_per_market: asBigInt(value.maximum_bet_per_wallet_per_market),

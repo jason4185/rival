@@ -1,6 +1,6 @@
 export type Outcome = "CRYPTO" | "COMMODITIES";
 export type MarketState = "OPEN" | "SETTLEMENT_PENDING" | "SETTLED" | "INCONCLUSIVE";
-export type SourceName = "BINANCE" | "BYBIT";
+export type SourceName = "GATE" | "BITGET";
 
 export type Page<T> = {
   items: T[];

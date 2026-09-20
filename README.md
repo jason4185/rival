@@ -25,7 +25,7 @@ Each market compares two three-asset baskets. Users choose the basket they expec
 1. Anyone may create only the next upcoming exact UTC-hour market.
 2. Users choose CRYPTO or COMMODITIES before the market starts.
 3. The market runs for exactly one hour.
-4. Binance and Bybit independently calculate both basket returns.
+4. Gate and Bitget independently calculate both basket returns.
 5. Both sources must agree on the same winner.
 6. Winning bettors share the pool pro rata.
 
@@ -37,7 +37,7 @@ For each asset, the return is calculated as:
 (close - open) / open
 ```
 
-Each basket is the equal-weight arithmetic average of its three asset returns. Binance calculates its own result and Bybit calculates its own result. Their prices are not averaged together. A winner is recorded only when both sources reach the same directional result.
+Each basket is the equal-weight arithmetic average of its three asset returns. Gate calculates its own result and Bitget calculates its own result. Their prices are not averaged together. A winner is recorded only when both sources reach the same directional result.
 
 ## Settlement
 
@@ -61,9 +61,20 @@ RIVAL uses pari-mutuel payouts. Winning bettors receive a share of the total poo
 
 ## Data Sources
 
-Settlement uses Binance and Bybit. Each source independently evaluates BTC, ETH, SOL, GOLD, SILVER, and WTI_CRUDE over the market's exact one-hour window. Source evidence is stored with the settlement result.
+Settlement uses Gate and Bitget. Each source independently evaluates BTC, ETH, SOL, GOLD, SILVER, and WTI_CRUDE over the market's exact one-hour window. Source evidence is stored with the settlement result.
 
-The frontend also provides a live Binance basket visualization. It is indicative only and does not determine the winner, payouts, refunds, or settlement state. Final settlement remains the contract's Binance and Bybit consensus.
+The provider symbols are:
+
+| Asset | Gate | Bitget |
+| --- | --- | --- |
+| BTC | `BTC_USDT` | `BTCUSDT` |
+| ETH | `ETH_USDT` | `ETHUSDT` |
+| SOL | `SOL_USDT` | `SOLUSDT` |
+| GOLD | `XAU_USDT` | `XAUUSDT` |
+| SILVER | `XAG_USDT` | `XAGUSDT` |
+| WTI_CRUDE | `CL_USDT` | `CLUSDT` |
+
+The frontend also provides a live Binance basket visualization. It is informational and indicative only; it does not determine the winner, payouts, refunds, or settlement state. Final settlement remains Gate + Bitget strict 2-of-2 consensus through the contract.
 
 ## Frontend
 
@@ -79,15 +90,18 @@ The frontend includes:
 
 The contract is the source of truth for markets, positions, pools, settlement, claims, and refunds.
 
+The Studio Next frontend uses `@genlayer/transaction-kit@0.1.0-rc.2`, `@genlayer/transaction-kit-react@0.1.0-rc.2`, and `genlayer-js@2.0.0-rc.1`.
+
 ## GenLayer
 
 GenLayer allows validators to independently fetch and verify the offchain market data used for settlement. RIVAL accepts a result only when the required source evidence and strict two-source consensus agree.
 
 ## Deployed Contract
 
-- Network: GenLayer Studio Dev / Studio Next
+- Network: GenLayer Studio Next
 - Chain ID: `61997`
-- Contract: `0x24b89F05FDa1b10BF60Cc526f65Da74C8EB5d38d`
+- RPC: <https://studio-next.genlayer.com/api>
+- Contract: `0xaaA3d790fF2FA38D9e0961F0081ffeCd5dC45391`
 - Explorer: <https://explorer-studio-dev.genlayer.com/>
 
 ## Running Locally
@@ -99,6 +113,8 @@ bun run dev
 ```
 
 The frontend also provides `bun run build` for a production build and `bun run lint` for linting.
+
+Additional local checks are available with `bunx tsc --noEmit` and `bun test`.
 
 ## Repository Structure
 

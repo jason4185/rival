@@ -97,7 +97,7 @@ export function BinanceMarketChart({
           </div>
           <h2 className="mt-1 text-base font-semibold">Live basket race</h2>
           <p className="mt-1 max-w-xl text-xs text-muted-foreground">
-            Indicative only · Final settlement requires Binance + Bybit consensus.
+            Indicative only · Final settlement requires Gate + Bitget consensus.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-xs">
