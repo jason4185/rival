@@ -24,6 +24,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# Local diagnostic contract; never commit
+contracts/SourceProbe.py
+
 # Logs and local environment files
 *.log
 npm-debug.log*
