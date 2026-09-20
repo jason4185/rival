@@ -174,7 +174,7 @@ function MarketContent({
     setSettlementFeedback(undefined);
     try {
       const fresh = await refreshMarket(m.market_id);
-      if (!fresh.settlement_available)
+      if (!fresh.settlement_available && !fresh.deadline_expired)
         throw new Error(
           fresh.state === "OPEN" && fresh.settlement_ready > BigInt(Math.floor(Date.now() / 1000))
             ? "settlement is not ready; candle finalization grace is active"
@@ -493,6 +493,22 @@ function SettlementPanel({
           className="mt-4 h-11 w-full rounded-md bg-gold text-sm font-semibold text-gold-foreground disabled:opacity-40"
         >
           {busy ? phaseLabel(phase) : "Retry settlement"}
+        </button>
+      </>
+    );
+  if (market.deadline_expired)
+    return (
+      <>
+        <div className="label-caps">Settlement expired</div>
+        <div className="mt-2 text-sm text-muted-foreground">
+          The deadline has passed. Finalize this market as inconclusive to enable refunds.
+        </div>
+        <button
+          disabled={busy}
+          onClick={onSettle}
+          className="mt-4 h-11 w-full rounded-md bg-gold text-sm font-semibold text-gold-foreground disabled:opacity-40"
+        >
+          {busy ? phaseLabel(phase) : "Finalize as inconclusive"}
         </button>
       </>
     );

@@ -125,6 +125,16 @@ describe("RIVAL frontend contract integration helpers", () => {
     expect(chartSource).toContain("h-[250px] w-full md:h-[270px]");
   });
 
+  test("keeps the permissionless deadline expiry settlement path available", () => {
+    const marketRoute = readFileSync(
+      new URL("../src/routes/market.$id.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(marketRoute).toContain("!fresh.settlement_available && !fresh.deadline_expired");
+    expect(marketRoute).toContain("if (market.deadline_expired)");
+    expect(marketRoute).toContain("Finalize as inconclusive");
+  });
+
   test("mobile action layout remains stackable", () => {
     const marketRoute = readFileSync(
       new URL("../src/routes/market.$id.tsx", import.meta.url),
